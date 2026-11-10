@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>GlassChat</title>
+<style>
+*{box-sizing:border-box;margin:0}
+:root{--g:rgba(255,255,255,.08);--b:rgba(255,255,255,.18);--t:#f4f6ff;--m:#a9b0d6;--a:linear-gradient(135deg,#7c5cff,#00d4ff)}
+body{min-height:100dvh;display:grid;place-items:center;font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--t);background:#0b0d1f;overflow:hidden}
+.blob{position:fixed;border-radius:50%;filter:blur(80px);opacity:.65;animation:fl 18s ease-in-out infinite alternate;z-index:-1}
+.blob:nth-child(1){width:46vmax;height:46vmax;background:#6c4bff;top:-12vmax;left:-10vmax}
+.blob:nth-child(2){width:40vmax;height:40vmax;background:#00c2ff;bottom:-14vmax;right:-8vmax;animation-delay:-6s}
+.blob:nth-child(3){width:30vmax;height:30vmax;background:#ff4fa3;top:35%;left:45%;animation-delay:-11s}
+@keyframes fl{to{transform:translate(8vmax,-6vmax) scale(1.2)}}
+.glass{background:var(--g);border:1px solid var(--b);backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);box-shadow:0 20px 60px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.2);border-radius:24px;animation:up .6s cubic-bezier(.2,.8,.2,1)}
+@keyframes up{from{opacity:0;transform:translateY(24px) scale(.97)}}
+[hidden]{display:none!important}
+#auth{width:min(380px,92vw);padding:32px;display:grid;gap:14px}
+h1{font-size:28px;letter-spacing:-.5px}
+.grad{background:var(--a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--m);font-size:14px}
+input{width:100%;padding:13px 16px;border-radius:14px;border:1px solid var(--b);background:rgba(255,255,255,.07);color:var(--t);font:inherit;outline:0;transition:.2s}
+input:focus{border-color:#8f7bff;box-shadow:0 0 0 4px rgba(124,92,255,.25)}
+::placeholder{color:#8d94bd}
+button{font:inherit;color:var(--t);cursor:pointer;border:0}
+button:focus-visible{outline:2px solid #8f7bff;outline-offset:2px}
+.go{padding:13px;border-radius:14px;background:var(--a);font-weight:600;transition:.2s}
+.go:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(124,92,255,.5)}
+.err{color:#ff8fa3;font-size:13px;min-height:18px}
+.tabs{position:relative;display:grid;grid-template-columns:1fr 1fr;padding:4px;border-radius:16px;background:rgba(255,255,255,.06)}
+.tabs::before{content:"";position:absolute;inset:4px;width:calc(50% - 4px);border-radius:12px;background:var(--a);transition:transform .35s cubic-bezier(.3,1.3,.5,1)}
+.tabs[data-t=ai]::before,.tabs[data-t=register]::before{transform:translateX(100%)}
+.tabs button{position:relative;padding:9px;background:none;border-radius:12px;font-weight:600}
+#app{width:min(920px,100%);height:min(94dvh,780px);display:flex;flex-direction:column;padding:16px;gap:12px}
+header{display:flex;align-items:center;gap:10px}
+header b{font-size:20px;flex:1}
+.chip{padding:6px 12px;border-radius:99px;background:rgba(255,255,255,.08);border:1px solid var(--b);font-size:13px;color:var(--m)}
+.chip.on::before{content:"";display:inline-block;width:8px;height:8px;margin-right:6px;border-radius:50%;background:#37e6a0;box-shadow:0 0 8px #37e6a0}
+button.chip{cursor:pointer}button.chip:hover{color:#fff}
+.msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:6px;scroll-behavior:smooth}
+.msgs::-webkit-scrollbar{width:6px}.msgs::-webkit-scrollbar-thumb{background:var(--b);border-radius:9px}
+.m{display:flex;gap:10px;max-width:85%;animation:pop .35s cubic-bezier(.3,1.4,.5,1)}
+.m.me{align-self:flex-end;flex-direction:row-reverse}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.95)}}
+.av{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:600 14px system-ui;font-style:normal}
+.b{padding:9px 14px;border-radius:18px;background:rgba(255,255,255,.1);border:1px solid var(--b)}
+.me .b{background:linear-gradient(135deg,rgba(124,92,255,.55),rgba(0,212,255,.35))}
+.b small{display:block;color:var(--m);font-size:11.5px}
+.b p{white-space:pre-wrap;overflow-wrap:anywhere}
+.dots span{display:inline-block;width:7px;height:7px;margin:5px 2px;border-radius:50%;background:var(--m);animation:bn 1s infinite}
+.dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}
+@keyframes bn{50%{transform:translateY(-6px);opacity:.4}}
+.send{display:flex;gap:10px}
+.send .go{padding:0 24px}
+.clr{align-self:flex-end;font-size:12px;background:none;color:var(--m)}
+.clr:hover{color:#fff}
+@media(max-width:600px){#app{height:100dvh;border-radius:0;padding:12px}.m{max-width:94%}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="blob"></div><div class="blob"></div><div class="blob"></div>
+
+<form id="auth" class="glass">
+  <h1>Glass<span class="grad">Chat</span></h1>
+  <p class="sub">Talk with everyone, or privately with AI.</p>
+  <div class="tabs" id="at" data-t="login">
+    <button type="button" data-m="login">Sign in</button>
+    <button type="button" data-m="register">Register</button>
+  </div>
+  <input id="u" placeholder="Username" autocomplete="username" required>
+  <input id="p" type="password" placeholder="Password (6+ characters)" autocomplete="current-password" required>
+  <div class="err" id="err"></div>
+  <button class="go" id="ab">Sign in</button>
+</form>
+
+<main id="app" class="glass" hidden>
+  <header>
+    <b>Glass<span class="grad">Chat</span></b>
+    <span class="chip on" id="on">1 online</span>
+    <span class="chip" id="me"></span>
+    <button class="chip" id="lo">Log out</button>
+  </header>
+  <div class="tabs" id="tt" data-t="group">
+    <button data-t="group">🌍 Group chat</button>
+    <button data-t="ai">✨ AI assistant</button>
+  </div>
+  <div class="msgs" id="G"></div>
+  <div class="msgs" id="A" hidden></div>
+  <button class="clr" id="clr" hidden>Clear my AI chat</button>
+  <form class="send" id="f">
+    <input id="i" placeholder="Message everyone…" autocomplete="off" maxlength="1000">
+    <button class="go">Send</button>
+  </form>
+</main>
+
+<script>
+const $ = s => document.querySelector(s), G = $('#G'), A = $('#A');
+let S = JSON.parse(localStorage.getItem('glass') || 'null'), ws, tab = 'group', mode = 'login';
+const AI = { name: 'Gemini', color: 'linear-gradient(135deg,#7c5cff,#00d4ff)' };
+const DOTS = '<span class="dots"><span></span><span></span><span></span></span>';
+
+const api = async (p, m = 'GET', body) => {
+  const r = await fetch('/api/' + p, { method: m, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (S?.token || '') }, body: body && JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw Error(j.error || 'Error ' + r.status);
+  return j;
+};
+
+function add(box, m, mine) {
+  const d = document.createElement('div');
+  d.className = 'm' + (mine ? ' me' : '');
+  d.innerHTML = '<i class="av"></i><div class="b"><small></small><p></p></div>';
+  const av = d.firstChild; av.style.background = m.color; av.textContent = m.name[0].toUpperCase();
+  d.querySelector('small').textContent = m.name + (m.ts ? ' · ' + new Date(m.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '');
+  d.querySelector('p').textContent = m.text;
+  box.append(d); box.scrollTop = box.scrollHeight;
+  return d;
+}
+
+function connect() {
+  ws = new WebSocket((location.protocol === 'https:' ? 'wss' : 'ws') + '://' + location.host + '/ws?token=' + S.token);
+  ws.onmessage = e => {
+    const d = JSON.parse(e.data);
+    if (d.type === 'history') { G.innerHTML = ''; d.msgs.forEach(m => add(G, m, m.name === S.user.name)); }
+    if (d.type === 'msg') add(G, d.m, d.m.name === S.user.name);
+    if (d.type === 'online') $('#on').textContent = d.n + ' online';
+  };
+  ws.onclose = e => { if (e.code === 4001) return logout(); if (S) setTimeout(connect, 1500); };
+}
+
+async function enter() {
+  $('#auth').hidden = true; $('#app').hidden = false;
+  $('#me').textContent = '@' + S.user.name;
+  connect();
+  try { (await api('ai')).forEach(m => add(A, m.role === 'user' ? { ...S.user, text: m.text } : { ...AI, text: m.text }, m.role === 'user')); } catch {}
+}
+function logout() { S = null; localStorage.removeItem('glass'); location.reload(); }
+
+$('#at').onclick = e => {
+  const m = e.target.dataset.m; if (!m) return;
+  mode = m; $('#at').dataset.t = m; $('#err').textContent = '';
+  $('#ab').textContent = m === 'login' ? 'Sign in' : 'Create account';
+  $('#p').autocomplete = m === 'login' ? 'current-password' : 'new-password';
+};
+$('#auth').onsubmit = async e => {
+  e.preventDefault();
+  try {
+    S = await api(mode, 'POST', { username: $('#u').value.trim(), password: $('#p').value });
+    localStorage.setItem('glass', JSON.stringify(S)); enter();
+  } catch (x) { $('#err').textContent = x.message; }
+};
+$('#tt').onclick = e => {
+  const t = e.target.dataset.t; if (!t || t === tab) return;
+  tab = t; $('#tt').dataset.t = t;
+  G.hidden = t !== 'group'; A.hidden = t !== 'ai'; $('#clr').hidden = t !== 'ai';
+  $('#i').placeholder = t === 'ai' ? 'Ask Gemini anything…' : 'Message everyone…';
+};
+$('#f').onsubmit = async e => {
+  e.preventDefault();
+  const v = $('#i').value.trim(); if (!v) return;
+  $('#i').value = '';
+  if (tab === 'group') return ws?.readyState === 1 && ws.send(v);
+  add(A, { ...S.user, text: v }, true);
+  const t = add(A, { ...AI, text: '' }), p = t.querySelector('p');
+  p.innerHTML = DOTS;
+  try { p.textContent = (await api('ai', 'POST', { message: v })).reply; }
+  catch (x) { p.textContent = '⚠️ ' + x.message; }
+  A.scrollTop = A.scrollHeight;
+};
+$('#clr').onclick = async () => { await api('ai', 'DELETE'); A.innerHTML = ''; };
+$('#lo').onclick = logout;
+if (S) enter();
+</script>
+</body>
+</html>
